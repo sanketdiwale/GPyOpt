@@ -28,6 +28,7 @@ class AcquisitionLCB(AcquisitionBase):
         self.optimizer = optimizer
         super(AcquisitionLCB, self).__init__(model, space, optimizer)
         self.exploration_weight = exploration_weight
+        self.name = "LCB"
 
         if cost_withGradients is not None:
             print('The set cost function is ignored! LCB acquisition does not make sense with cost.')  
