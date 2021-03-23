@@ -7,7 +7,7 @@ import numpy as np
 import time
 import csv
 import logging
-
+from IPython import embed
 from ..util.general import best_value, normalize
 from ..util.duplicate_manager import DuplicateManager
 from ..core.errors import InvalidConfigError
@@ -56,6 +56,8 @@ class BO(object):
         self.model_parameters_iterations = None
         self.context = None
         self.num_acquisitions = 0
+        self.Y_best = None
+        self.X_best = None
 
     def suggest_next_locations(self, context = None, pending_X = None, ignored_X = None):
         """
@@ -134,17 +136,25 @@ class BO(object):
         self.num_acquisitions = 0
         self.suggested_sample = self.X
         self.Y_new = self.Y
+        # embed()
+        if self.Y_best is None:
+            self.Y_best = self.Y.min()*np.ones((self.Y.shape[0],))
+        if self.X_best is None:
+            self.X_best = self.X[[np.argmin(self.Y)]*self.Y.shape[0],:]
 
         # --- Initialize time cost of the evaluations
         while (self.max_time > self.cum_time):
             # --- Update model
             try:
                 self._update_model(self.normalization_type)
-            except np.linalg.linalg.LinAlgError:
+            except np.linalg.linalg.LinAlgError as e:
+                print(e)
+                # embed()
                 break
 
-            if (self.num_acquisitions >= self.max_iter
-                    or (len(self.X) > 1 and self._distance_last_evaluations() <= self.eps)):
+            if (self.num_acquisitions >= self.max_iter):
+                # or (len(self.X) > 1 and self._distance_last_evaluations() <= self.eps)):
+                # embed()
                 break
 
             self.suggested_sample = self._compute_next_evaluations()
@@ -207,9 +217,13 @@ class BO(object):
         """
         Computes the optimum and its value.
         """
-        self.Y_best = best_value(self.Y)
-        self.x_opt = self.X[np.argmin(self.Y),:]
-        self.fx_opt = np.min(self.Y)
+        # self.Y_best = best_value(self.Y)
+        ypred,_ = self.model.model.predict(self.model.model.X)
+        # embed()
+        self.Y_best = np.hstack((self.Y_best,ypred.min()))
+        self.x_opt = self.X[np.argmin(ypred),:]
+        self.X_best = np.vstack((self.X_best,self.X[[np.argmin(ypred)],:]))
+        self.fx_opt = ypred.min() #np.min(self.Y)
 
     def _distance_last_evaluations(self):
         """
@@ -258,7 +272,7 @@ class BO(object):
             self.model.updateModel(X_inmodel, Y_inmodel, None, None)
 
         # Save parameters of the model
-        self._save_model_parameter_values()
+        # self._save_model_parameter_values()
 
     def _save_model_parameter_values(self):
         if self.model_parameters_iterations is None:
@@ -285,14 +299,14 @@ class BO(object):
             model_to_plot.updateModel(self.X, Y, self.X, Y)
         else:
             model_to_plot = self.model
-
+        # embed()
         return plot_acquisition(self.acquisition.space.get_bounds(),
                                 model_to_plot.model.X.shape[1],
                                 model_to_plot.model,
                                 model_to_plot.model.X,
                                 model_to_plot.model.Y,
                                 self.acquisition.acquisition_function,
-                                self.suggest_next_locations(),
+                                self.suggested_sample,#self.suggest_next_locations(),
                                 filename,
                                 label_x,
                                 label_y)
@@ -304,7 +318,7 @@ class BO(object):
             plot 2: Iterations vs. the mean of the current model in the selected sample.
         :param filename: name of the file where the plot is saved
         """
-        return plot_convergence(self.X,self.Y_best,filename)
+        return plot_convergence(self.X,self.Y_best.tolist(),filename)
 
     def get_evaluations(self):
         return self.X.copy(), self.Y.copy()

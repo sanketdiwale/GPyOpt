@@ -248,11 +248,35 @@ class GPModel_MCMC(BOModel):
             self.model.set_XY(X_all, Y_all)
 
         # update the model generating hmc samples
-        self.model.optimize(max_iters = 200)
+        # self.model.optimize(max_iters = 200)
         self.model.param_array[:] = self.model.param_array * (1.+np.random.randn(self.model.param_array.size)*0.01)
         self.hmc = GPy.inference.mcmc.HMC(self.model, stepsize=self.step_size)
         ss = self.hmc.sample(num_samples=self.n_burnin + self.n_samples* self.subsample_interval, hmc_iters=self.leapfrog_steps)
         self.hmc_samples = ss[self.n_burnin::self.subsample_interval]
+
+    def _predict(self, X, full_cov, include_likelihood):
+        """
+        Predictions with the model for all the MCMC samples. Returns posterior means and standard deviations at X. Note that this is different in GPy where the variances are given.
+        """
+
+        if X.ndim==1: X = X[None,:]
+        ps = self.model.param_array.copy()
+        means = []
+        stds = []
+        for s in self.hmc_samples:
+            if self.model._fixes_ is None:
+                self.model[:] = s
+            else:
+                self.model[self.model._fixes_] = s
+            self.model._trigger_params_changed()
+            # m, v = self.model.predict(X)
+            m, v = self.model.predict(X, full_cov=full_cov, include_likelihood=include_likelihood)
+            v = np.clip(v, 1e-10, np.inf)
+            means.append(m)
+            stds.append(np.sqrt(np.clip(v, 1e-10, np.inf)))
+        self.model.param_array[:] = ps
+        self.model._trigger_params_changed()
+        return sum(means)/len(means), np.sqrt(np.sum(np.array(stds)**2,axis=0))/len(stds)
 
     def predict(self, X):
         """
@@ -274,7 +298,7 @@ class GPModel_MCMC(BOModel):
             stds.append(np.sqrt(np.clip(v, 1e-10, np.inf)))
         self.model.param_array[:] = ps
         self.model._trigger_params_changed()
-        return means, stds
+        return sum(means)/len(means), np.sqrt(np.sum(np.array(stds)**2))/len(stds)
 
     def get_fmin(self):
         """
@@ -292,7 +316,7 @@ class GPModel_MCMC(BOModel):
         self.model.param_array[:] = ps
         self.model._trigger_params_changed()
 
-        return fmins
+        return sum(fmins)/len(fmins)
 
     def predict_withGradients(self, X):
         """
@@ -321,7 +345,7 @@ class GPModel_MCMC(BOModel):
             dsdxs.append(dsdx)
         self.model.param_array[:] = ps
         self.model._trigger_params_changed()
-        return means, stds, dmdxs, dsdxs
+        return sum(means)/len(means), np.sqrt(np.sum(np.array(stds)**2))/len(stds), sum(dmdxs)/len(dmdxs), sum(dsdxs)/len(dsdxs)
 
     def copy(self):
         """
