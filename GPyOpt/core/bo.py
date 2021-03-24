@@ -306,7 +306,7 @@ class BO(object):
                                 model_to_plot.model.X,
                                 model_to_plot.model.Y,
                                 self.acquisition.acquisition_function,
-                                self.suggested_sample,#self.suggest_next_locations(),
+                                self.suggest_next_locations(),
                                 filename,
                                 label_x,
                                 label_y)
