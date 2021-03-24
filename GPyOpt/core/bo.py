@@ -218,9 +218,9 @@ class BO(object):
         Computes the optimum and its value.
         """
         # self.Y_best = best_value(self.Y)
-        ypred,_ = self.model.model.predict(self.model.model.X)
+        # ypred,_ = model.predict(self.model.model.X)
         # embed()
-        self.Y_best = np.hstack((self.Y_best,ypred.min()))
+        self.Y_best = np.hstack((self.Y_best,self.model.get_fmin()))#ypred.min()))
         self.x_opt = self.X[np.argmin(ypred),:]
         self.X_best = np.vstack((self.X_best,self.X[[np.argmin(ypred)],:]))
         self.fx_opt = ypred.min() #np.min(self.Y)
