@@ -35,7 +35,7 @@ class AcquisitionEI(AcquisitionBase):
         """
         Computes the Expected Improvement per unit of cost
         """
-        m, s = self.model.predict(x)
+        m, s = self.model.predict(x,with_noise=False)
         # s = np.sqrt(s)
         fmin = self.model.get_fmin()
         phi, Phi, u = get_quantiles(self.jitter, fmin, m, s)

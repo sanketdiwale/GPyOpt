@@ -133,7 +133,7 @@ class GPModel(BOModel):
         Returns the mean, standard deviation, mean gradient and standard deviation gradient at X.
         """
         if X.ndim==1: X = X[None,:]
-        m, v = self.model.predict(X)
+        m, v = self.model.predict(X,include_likelihood=False)
         v = np.clip(v, 1e-10, np.inf)
         dmdx, dvdx = self.model.predictive_gradients(X)
         dmdx = dmdx[:,:,0]
