@@ -58,14 +58,18 @@ def plot_acquisition(bounds, input_dim, model, Xdata, Ydata, acquisition_functio
         x_grid = x_grid.reshape(len(x_grid),1)
         acqu = acquisition_function(x_grid)
         acqu_normalized = (-acqu - min(-acqu))/(max(-acqu - min(-acqu)))
-        m, v = model.predict(x_grid)
+        m, v = model.predict(x_grid,include_likelihood=True)
+        m, v0 = model.predict(x_grid,include_likelihood=False)
 
 
         model.plot_density(bounds[0], alpha=.5)
 
         plt.plot(x_grid, m, 'k-',lw=1,alpha = 0.6)
-        plt.plot(x_grid, m-1.96*np.sqrt(v), 'k-', alpha = 0.2)
-        plt.plot(x_grid, m+1.96*np.sqrt(v), 'k-', alpha=0.2)
+        plt.plot(x_grid, m-1.96*np.sqrt(v), 'r-', alpha = 0.2)
+        plt.plot(x_grid, m+1.96*np.sqrt(v), 'r-', alpha=0.2)
+
+        plt.plot(x_grid, m-1.96*np.sqrt(v0), 'k--', alpha = 0.1)
+        plt.plot(x_grid, m+1.96*np.sqrt(v0), 'k--', alpha=0.1)
 
         plt.plot(Xdata, Ydata, 'r.', markersize=10)
         plt.axvline(x=suggested_sample[len(suggested_sample)-1],color='r')
