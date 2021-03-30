@@ -37,7 +37,7 @@ class AcquisitionLCB(AcquisitionBase):
         """
         Computes the GP-Lower Confidence Bound 
         """
-        m, s = self.model.predict(x)   
+        m, s = self.model.predict(x,with_noise=False)   
         f_acqu = -m + self.exploration_weight * s
         return f_acqu
 
