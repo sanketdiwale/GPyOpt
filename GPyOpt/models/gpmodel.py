@@ -126,7 +126,8 @@ class GPModel(BOModel):
         """
         Returns the location where the posterior mean is takes its minimal value.
         """
-        return self.model.predict(self.model.X)[0].min()
+        m,s = self.predict(self.model.X,with_noise=False)
+        return (m+s).min()
 
     def predict_withGradients(self, X):
         """

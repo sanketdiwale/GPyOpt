@@ -218,12 +218,13 @@ class BO(object):
         Computes the optimum and its value.
         """
         # self.Y_best = best_value(self.Y)
-        ypred,_ = self.model.model.predict(self.model.model.X)
+        ypred,spred = self.model.predict(self.model.model.X,with_noise=False)
         # embed()
-        self.Y_best = np.hstack((self.Y_best,ypred.min()))
-        self.x_opt = self.X[np.argmin(ypred),:]
+        a = np.argmin(ypred+spred); 
+        self.Y_best = np.hstack((self.Y_best,ypred[a]))
+        self.x_opt = self.X[a,:]
         self.X_best = np.vstack((self.X_best,self.X[[np.argmin(ypred)],:]))
-        self.fx_opt = ypred.min() #np.min(self.Y)
+        self.fx_opt = ypred[a] #np.min(self.Y)
 
     def _distance_last_evaluations(self):
         """
