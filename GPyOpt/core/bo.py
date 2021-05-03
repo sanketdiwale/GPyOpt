@@ -7,7 +7,6 @@ import numpy as np
 import time
 import csv
 import logging
-from IPython import embed
 from ..util.general import best_value, normalize
 from ..util.duplicate_manager import DuplicateManager
 from ..core.errors import InvalidConfigError

@@ -6,7 +6,7 @@ from pylab import grid
 import matplotlib.pyplot as plt
 from pylab import savefig
 import pylab
-
+from IPython import embed
 
 def plot_acquisition(bounds, input_dim, model, Xdata, Ydata, acquisition_function, suggested_sample,
                      filename=None, label_x=None, label_y=None, color_by_step=True):
@@ -56,8 +56,8 @@ def plot_acquisition(bounds, input_dim, model, Xdata, Ydata, acquisition_functio
 
         x_grid = np.arange(bounds[0][0], bounds[0][1], 0.001)
         x_grid = x_grid.reshape(len(x_grid),1)
-        acqu = acquisition_function(x_grid)
-        acqu_normalized = (-acqu - min(-acqu))/(max(-acqu - min(-acqu)))
+        acqu = -1.*acquisition_function._compute_acq(x_grid)
+        acqu_normalized = (-acqu - min(-acqu))/(max(-acqu - min(-acqu))+1e-3)
         m, v = model.predict(x_grid,include_likelihood=True)
         m, v0 = model.predict(x_grid,include_likelihood=False)
 
@@ -74,11 +74,16 @@ def plot_acquisition(bounds, input_dim, model, Xdata, Ydata, acquisition_functio
         plt.plot(Xdata, Ydata, 'r.', markersize=10)
         plt.axvline(x=suggested_sample[len(suggested_sample)-1],color='r')
         factor = max(m+1.96*np.sqrt(v))-min(m-1.96*np.sqrt(v))
-
-        plt.plot(x_grid,0.2*factor*acqu_normalized-abs(min(m-1.96*np.sqrt(v)))-0.25*factor, 'r-',lw=2,label ='Acquisition (arbitrary units)')
+        ylim_min = min(min(m-1.96*np.sqrt(v))-0.25*factor,min(Ydata)-1.)
+        ylim_max = max(max(m+1.96*np.sqrt(v))+0.05*factor,max(Ydata)+1.)
+        plt.plot(x_grid,0.2*factor*acqu_normalized+ylim_min, 'r-',lw=2,label ='Acquisition (arbitrary units)')
+        
+        # print('Acquisition min: ',min(0.2*factor*acqu_normalized+ylim_min))
+        # print('Acquisition max: ',max(0.2*factor*acqu_normalized+ylim_min))
+        # embed()
         plt.xlabel(label_x)
         plt.ylabel(label_y)
-        plt.ylim(min(m-1.96*np.sqrt(v))-0.25*factor,  max(m+1.96*np.sqrt(v))+0.05*factor)
+        plt.ylim(ylim_min,  ylim_max)
         plt.axvline(x=suggested_sample[len(suggested_sample)-1],color='r')
         plt.legend(loc='upper left')
 

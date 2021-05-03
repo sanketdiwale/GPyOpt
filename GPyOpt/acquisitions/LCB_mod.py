@@ -39,9 +39,7 @@ class AcquisitionLCB(AcquisitionBase):
         """
         m, v = self.model.predict(x, full_cov=False, include_likelihood=False)
         f_acqu = m - self.exploration_weight * np.sqrt(v)
-        # f_acqu = (f_acqu - min(f_acqu))
-        # n = (max(f_acqu - min(f_acqu))+1e-3)
-        return -f_acqu#/n
+        return -f_acqu
 
     def _compute_acq_withGradients(self, X):
         """
@@ -55,9 +53,7 @@ class AcquisitionLCB(AcquisitionBase):
         dmdx = dmdx[:,:,0]
         dsdx = dvdx / (2*np.sqrt(v))
 
-        f_acqu = m - self.exploration_weight * np.sqrt(v)    
-        # f_acqu = (f_acqu - min(f_acqu))
-        # n = (max(f_acqu - min(f_acqu))+1e-3)   
+        f_acqu = m - self.exploration_weight * np.sqrt(v)       
         df_acqu = dmdx - self.exploration_weight * dsdx
-        return -f_acqu, -df_acqu#/n
+        return -f_acqu, -df_acqu
 

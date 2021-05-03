@@ -35,11 +35,15 @@ class AcquisitionEI(AcquisitionBase):
         """
         Computes the Expected Improvement per unit of cost
         """
-        m, s = self.model.predict(x,with_noise=False)
-        # s = np.sqrt(s)
-        fmin = self.model.get_fmin()
-        phi, Phi, u = get_quantiles(self.jitter, fmin, m, s)
-        f_acqu = s * phi + (fmin - m - self.jitter)*Phi 
+        m, v = self.model.predict(x, full_cov=False, include_likelihood=False)
+        # m, s = self.model.predict(x,with_noise=False)
+        s = np.sqrt(v)
+        # fmin = self.model.get_fmin()
+        # fm,_ = self.model.predict(self.model.X, full_cov=False, include_likelihood=False)
+        # fmin = fm.min()
+
+        phi, Phi, u = get_quantiles(self.jitter, self.fmin, m, s)
+        f_acqu = s * phi + (self.fmin - m - self.jitter)*Phi 
         # embed()
         # if isinstance(s, np.ndarray): # correcting the internal heuristic used in get_quantiles
         #     f_acqu[s<np.sqrt(0.01+self.model.noise_var)] = max(0,fmin - m[s<np.sqrt(self.model.noise_var)] - self.jitter)
@@ -49,16 +53,25 @@ class AcquisitionEI(AcquisitionBase):
         #     f_acqu = max(0,fmin - m - self.jitter)
         return f_acqu
 
-    def _compute_acq_withGradients(self, x):
+    def _compute_acq_withGradients(self, X):
         """
         Computes the Expected Improvement and its derivative (has a very easy derivative!)
         """
-        fmin = self.model.get_fmin()
-        m, s, dmdx, dsdx = self.model.predict_withGradients(x)
-        # s = np.sqrt(s)
-        phi, Phi, u = get_quantiles(self.jitter, fmin, m, s)
+        # fmin = self.model.get_fmin()
+        # fm,_ = self.model.predict(self.model.X, full_cov=False, include_likelihood=False)
+        # fmin = fm.min()
+        # m, s, dmdx, dsdx = self.model.predict_withGradients(x)
+        if X.ndim==1: X = X[None,:]
+        m, v = self.model.predict(X,include_likelihood=False)
+        v = np.clip(v, 1e-10, np.inf)
+        dmdx, dvdx = self.model.predictive_gradients(X)
+        dmdx = dmdx[:,:,0]
+        dsdx = dvdx / (2*np.sqrt(v))
+
+        s = np.sqrt(v)
+        phi, Phi, u = get_quantiles(self.jitter, self.fmin, m, s)
         # f_acqu = s * (u * Phi + phi)
-        f_acqu = s * phi + (fmin - m - self.jitter)*Phi 
+        f_acqu = s * phi + (self.fmin - m - self.jitter)*Phi 
         # if isinstance(s, np.ndarray): # correcting the internal heuristic used in get_quantiles
         #     f_acqu[s<1e-10] = max(0,fmin - m[s<1e-10] - self.jitter)
         # elif s< 1e-10:
